@@ -1,22 +1,47 @@
-import socket, time
+'''Config a rest Tello EDU drone to connect to a Relaybox'''
 
-host_ip = ''
-host_port = 11111
+import socket
 
-tello_ip = '192.168.10.1'
-tello_port = 8889
 
-# Create UDP socket.
-udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+def config_TELLO_EDU(
+    SSID: str = 'fakeRelay',
+    password: str = 'WORDPASS',
+    Tello_EDU_IPv4: str = '192.168.10.1'
+) -> None:
+    """Config a Tello EDU drone to enter SDK mode and connect to a Wireless
+    Access Point (WAP).
 
-udp_socket.bind((host_ip, host_port))
+    When the drone has been factory reset, configure it so, that it is capable
+    to access a wireless access point and retrieve SDK commands.
 
-# Initialize sdk and reset password
-udp_socket.sendto(bytes("command", 'utf-8'), (tello_ip, tello_port))
-status1 = udp_socket.recvfrom(128)
-print(status1)
+    Args:
+        SSID (str, optional): The name of the WAP. Defaults to "fakeRelay".
+        password (str, optional): The WAP2 password. Defaults to "WORDPASS".
+        Tello_EDU_IP (str, optional): The IPv4 address to the Tello EDU drone.
+        Defaults to '192.168.10.1'.
+    """
 
-udp_socket.sendto(bytes("ap fakeRelay WORDPASS", 'utf-8'), (tello_ip, tello_port))
-print("Set to access point mode")
-status2 = udp_socket.recvfrom(128)
-print(status2)
+    # The default port for the Tello EDU drone to retrieve commands
+    TELLO_EDU_PORT: int = 8889
+    TELLO_EDU_ADDRESS: tuple = (Tello_EDU_IPv4, TELLO_EDU_PORT)
+
+    # Create UDP socket to communicate to the Tello EDU drone.
+    connection_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    connection_UDP.connect(TELLO_EDU_ADDRESS)
+
+    # Initialize the Tello SKD.
+    connection_UDP.send(b'command')
+    print('Starting the SDK...')
+    Tello_EDU_status_message = connection_UDP.recvfrom(128)
+    print(Tello_EDU_status_message)
+
+    # Config to WAP with password (WPA2)
+    config_WiFi = bytes(f'ap {SSID} {password}', encoding='utf-8')
+    connection_UDP.send(config_WiFi)
+    print('Set to access point mode...')
+    Tello_EDU_status_message = connection_UDP.recvfrom(128)
+    print(Tello_EDU_status_message)
+
+
+if __name__ == '__main__':
+    config_TELLO_EDU()
